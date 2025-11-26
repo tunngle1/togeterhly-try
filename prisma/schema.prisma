@@ -1,0 +1,150 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(uuid())
+  telegramId  BigInt   @unique
+  name        String
+  username    String?
+  avatarUrl   String?
+  birthday    String?
+  isAdmin     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  createdGroups    Group[]         @relation("GroupCreator")
+  groupMemberships GroupMember[]
+  
+  createdEvents    Event[]         @relation("EventCreator")
+  beneficiaryEvents Event[]        @relation("EventBeneficiary")
+  eventParticipations EventParticipant[]
+  contributions    Contribution[]
+
+  wishlistItems    WishlistItem[]  @relation("WishlistOwner")
+  bookedItems      WishlistItem[]  @relation("WishlistBooker")
+
+  santaAdmin       SantaRoom[]     @relation("SantaAdmin")
+  santaParticipations SantaParticipant[]
+}
+
+model Group {
+  id          String   @id // Short ID manually generated
+  title       String
+  password    String
+  description String?
+  creatorId   String
+  createdAt   DateTime @default(now())
+
+  creator     User     @relation("GroupCreator", fields: [creatorId], references: [id])
+  members     GroupMember[]
+  events      Event[]
+  santaRooms  SantaRoom[]
+}
+
+model GroupMember {
+  id        String   @id @default(uuid())
+  groupId   String
+  userId    String
+  joinedAt  DateTime @default(now())
+
+  group     Group    @relation(fields: [groupId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([groupId, userId])
+}
+
+model Event {
+  id           String   @id @default(uuid())
+  groupId      String
+  title        String
+  date         String
+  targetAmount Float
+  currency     String   @default("RUB")
+  creatorId    String
+  beneficiaryId String?
+  isClosed     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  group        Group    @relation(fields: [groupId], references: [id])
+  creator      User     @relation("EventCreator", fields: [creatorId], references: [id])
+  beneficiary  User?    @relation("EventBeneficiary", fields: [beneficiaryId], references: [id])
+  
+  participants EventParticipant[]
+  contributions Contribution[]
+}
+
+model EventParticipant {
+  id        String   @id @default(uuid())
+  eventId   String
+  userId    String
+  status    String   @default("JOINED") // INVITED, JOINED, DECLINED
+  paidAmount Float   @default(0)
+  joinedAt  DateTime @default(now())
+
+  event     Event    @relation(fields: [eventId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([eventId, userId])
+}
+
+model Contribution {
+  id        String   @id @default(uuid())
+  eventId   String
+  userId    String
+  amount    Float
+  status    String   @default("PENDING") // PENDING, CONFIRMED, REJECTED
+  date      DateTime @default(now())
+
+  event     Event    @relation(fields: [eventId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model WishlistItem {
+  id          String   @id @default(uuid())
+  userId      String
+  title       String
+  url         String?
+  description String?
+  priority    String   @default("medium") // low, medium, high
+  isBooked    Boolean  @default(false)
+  bookedBy    String?
+  createdAt   DateTime @default(now())
+
+  user        User     @relation("WishlistOwner", fields: [userId], references: [id])
+  booker      User?    @relation("WishlistBooker", fields: [bookedBy], references: [id])
+}
+
+model SantaRoom {
+  id           String   @id @default(uuid())
+  groupId      String
+  adminId      String
+  title        String
+  budget       String?
+  deadline     String?
+  status       String   @default("WAITING") // WAITING, DRAWN, COMPLETED
+  assignments  Json?    // Storing key-value pairs of giver -> receiver IDs
+  createdAt    DateTime @default(now())
+
+  group        Group    @relation(fields: [groupId], references: [id])
+  admin        User     @relation("SantaAdmin", fields: [adminId], references: [id])
+  participants SantaParticipant[]
+}
+
+model SantaParticipant {
+  id             String   @id @default(uuid())
+  roomId         String
+  userId         String
+  wishText       String?
+  wishlistItemId String?
+  joinedAt       DateTime @default(now())
+
+  room           SantaRoom @relation(fields: [roomId], references: [id])
+  user           User      @relation(fields: [userId], references: [id])
+
+  @@unique([roomId, userId])
+}

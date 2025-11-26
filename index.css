@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-slate-50 text-slate-900;
+  -webkit-tap-highlight-color: transparent;
+  /* Фикс для Safari, чтобы контент не заезжал за пределы */
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Утилита для скрытия скроллбара */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Безопасные зоны с дополнительным отступом */
+.pb-safe-extra {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 16px);
+}
+
+.bottom-safe-extra {
+  bottom: calc(env(safe-area-inset-bottom) + 24px);
+}
+
+/* Falling animation for confetti/snow */
+@keyframes fall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(100vh) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+.animate-fall {
+  animation: fall linear forwards;
+}
